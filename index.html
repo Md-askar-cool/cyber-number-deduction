@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ThreatShield OS — Social Engineering Detector</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- SCAN LINE OVERLAY -->
+<div class="scanlines"></div>
+<div class="grid-bg"></div>
+
+<!-- BOOT SCREEN -->
+<div id="boot-screen">
+  <div class="boot-inner">
+    <div class="boot-logo">TS</div>
+    <div class="boot-title">THREATSHIELD OS</div>
+    <div class="boot-log" id="boot-log"></div>
+    <div class="boot-bar-wrap"><div class="boot-bar" id="boot-bar"></div></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="ts-logo">TS</div>
+      <div>
+        <div class="ts-name">THREATSHIELD <span class="ts-os">OS</span></div>
+        <div class="ts-ver">v3.1 · RULE ENGINE · NO API REQUIRED</div>
+      </div>
+    </div>
+    <div class="topbar-center">
+      <div class="status-light"></div>
+      <span id="status-text">SYSTEM READY</span>
+    </div>
+    <div class="topbar-right">
+      <div class="clock" id="clock"></div>
+      <div class="threat-level-wrap">
+        <span class="tl-label">THREAT LEVEL</span>
+        <span class="tl-value" id="tl-value">—</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- LEFT PANEL: INPUT -->
+    <div class="panel panel-input">
+      <div class="panel-title">
+        <span class="panel-icon">⌨</span> INPUT TERMINAL
+        <span class="panel-badge" id="input-type-badge">PHONE_NUMBER</span>
+      </div>
+
+      <!-- Type selector -->
+      <div class="type-row">
+        <button class="ttype active" data-type="phone_number" onclick="setType(this)">
+          <span class="ttype-icon">📱</span>
+          <span>PHONE</span>
+        </button>
+        <button class="ttype" data-type="email_address" onclick="setType(this)">
+          <span class="ttype-icon">✉</span>
+          <span>EMAIL ADDR</span>
+        </button>
+        <button class="ttype" data-type="sms_text" onclick="setType(this)">
+          <span class="ttype-icon">💬</span>
+          <span>SMS TEXT</span>
+        </button>
+        <button class="ttype" data-type="email_text" onclick="setType(this)">
+          <span class="ttype-icon">📄</span>
+          <span>EMAIL TEXT</span>
+        </button>
+      </div>
+
+      <!-- Terminal input -->
+      <div class="terminal-wrap">
+        <div class="terminal-header">
+          <span class="t-circle r"></span>
+          <span class="t-circle y"></span>
+          <span class="t-circle g"></span>
+          <span class="t-file" id="t-file">phone_input.txt</span>
+          <span class="t-bytes" id="t-bytes">0B</span>
+        </div>
+        <div class="terminal-body">
+          <span class="prompt">root@threatshield:~$ </span>
+          <textarea id="main-input"
+            placeholder="+1-555-867-5309"
+            rows="6"
+            oninput="onInput(this)"
+          ></textarea>
+        </div>
+        <!-- Real-time mini indicators -->
+        <div class="rt-bar" id="rt-bar">
+          <span class="rt-item" id="rt-urgency">URGENCY: —</span>
+          <span class="rt-sep">|</span>
+          <span class="rt-item" id="rt-links">LINKS: 0</span>
+          <span class="rt-sep">|</span>
+          <span class="rt-item" id="rt-keywords">FLAGS: 0</span>
+        </div>
+      </div>
+
+      <!-- Scan button -->
+      <button class="scan-btn" id="scan-btn" onclick="analyze()">
+        <span class="scan-btn-icon" id="scan-btn-icon">▶</span>
+        <span id="scan-btn-text">INITIATE SCAN</span>
+        <span class="scan-btn-kbd">CTRL+ENTER</span>
+      </button>
+
+      <!-- Examples -->
+      <div class="examples-wrap">
+        <div class="ex-title">// LOAD TEST PAYLOAD</div>
+        <div class="ex-list">
+          <button class="ex-item" onclick="loadEx('sms_text','URGENT: Your account has been suspended! Click http://bit.ly/3xFraud to restore access immediately or it will be permanently deleted within 24hrs!')">
+            <span class="ex-tag malicious">MALICIOUS</span> Urgency SMS
+          </button>
+          <button class="ex-item" onclick="loadEx('email_address','support@paypa1-secure.com')">
+            <span class="ex-tag malicious">MALICIOUS</span> Lookalike Domain
+          </button>
+          <button class="ex-item" onclick="loadEx('email_text','Dear Customer,\n\nWe detected suspicious activity. Verify your credentials now or your account closes in 24h.\n\nClick: http://secure-bank-verify.tk/login\n\nOTP: 482910 — share with our agent.\n\nBank Security Team')">
+            <span class="ex-tag malicious">MALICIOUS</span> Phishing Email
+          </button>
+          <button class="ex-item" onclick="loadEx('sms_text','You won $5000! Send bank details to claim. Reply WIN to +1-800-555-0199')">
+            <span class="ex-tag malicious">MALICIOUS</span> Prize Scam
+          </button>
+          <button class="ex-item" onclick="loadEx('phone_number','+1 (212) 555-0192')">
+            <span class="ex-tag suspicious">SUSPICIOUS</span> Unverified Number
+          </button>
+          <button class="ex-item" onclick="loadEx('email_address','newsletter@github.com')">
+            <span class="ex-tag safe">SAFE</span> Legit Email
+          </button>
+          <button class="ex-item" onclick="loadEx('sms_text','Hi! Your Amazon order #112-4859201 has shipped. Track at amazon.com/tracking')">
+            <span class="ex-tag safe">SAFE</span> Normal SMS
+          </button>
+          <button class="ex-item" onclick="loadEx('email_address','hr@google-careers-hiring-team.com')">
+            <span class="ex-tag malicious">MALICIOUS</span> Fake Job HR
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER PANEL: RADAR + RESULT -->
+    <div class="panel panel-center">
+
+      <!-- THREAT RADAR -->
+      <div class="panel-title"><span class="panel-icon">◉</span> THREAT RADAR</div>
+      <div class="radar-wrap">
+        <canvas id="radar" width="220" height="220"></canvas>
+        <div class="radar-score-wrap">
+          <div class="radar-score" id="radar-score">—</div>
+          <div class="radar-label" id="radar-label">AWAITING SCAN</div>
+        </div>
+      </div>
+
+      <!-- VERDICT BOX -->
+      <div class="verdict-box" id="verdict-box">
+        <div class="vb-idle">
+          <div class="idle-icon">⬡</div>
+          <div class="idle-text">Run a scan to see results</div>
+        </div>
+      </div>
+
+      <!-- SCORE BREAKDOWN -->
+      <div class="panel-title" style="margin-top:12px"><span class="panel-icon">▦</span> SCORE BREAKDOWN</div>
+      <div class="breakdown-grid" id="breakdown-grid">
+        <div class="bk-item"><div class="bk-label">Urgency</div><div class="bk-bar-wrap"><div class="bk-bar" id="bk-urgency"></div></div><div class="bk-val" id="bkv-urgency">—</div></div>
+        <div class="bk-item"><div class="bk-label">Deception</div><div class="bk-bar-wrap"><div class="bk-bar" id="bk-deception"></div></div><div class="bk-val" id="bkv-deception">—</div></div>
+        <div class="bk-item"><div class="bk-label">Manipulation</div><div class="bk-bar-wrap"><div class="bk-bar" id="bk-manipulation"></div></div><div class="bk-val" id="bkv-manipulation">—</div></div>
+        <div class="bk-item"><div class="bk-label">Link Risk</div><div class="bk-bar-wrap"><div class="bk-bar" id="bk-link"></div></div><div class="bk-val" id="bkv-link">—</div></div>
+        <div class="bk-item"><div class="bk-label">Identity Spoof</div><div class="bk-bar-wrap"><div class="bk-bar" id="bk-spoof"></div></div><div class="bk-val" id="bkv-spoof">—</div></div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: THREAT LOG + RECOMMENDATIONS -->
+    <div class="panel panel-right">
+
+      <!-- THREAT LOG -->
+      <div class="panel-title"><span class="panel-icon">⚑</span> THREAT LOG</div>
+      <div class="threat-log" id="threat-log">
+        <div class="log-idle">// No active threats —<br>run a scan to populate</div>
+      </div>
+
+      <!-- ATTACK TYPES -->
+      <div class="panel-title" style="margin-top:12px"><span class="panel-icon">◈</span> ATTACK CLASSIFICATION</div>
+      <div class="attack-tags" id="attack-tags">
+        <div class="tags-idle">// Awaiting analysis</div>
+      </div>
+
+      <!-- RECOMMENDATIONS -->
+      <div class="panel-title" style="margin-top:12px"><span class="panel-icon">▷</span> COUNTERMEASURES</div>
+      <div class="rec-list" id="rec-list">
+        <div class="tags-idle">// No recommendations yet</div>
+      </div>
+
+      <!-- HISTORY -->
+      <div class="panel-title" style="margin-top:12px"><span class="panel-icon">≡</span> SCAN HISTORY</div>
+      <div class="history-log" id="history-log">
+        <div class="log-idle">// No previous scans</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM STATUS BAR -->
+  <footer class="statusbar">
+    <span>ThreatShield OS v3.1</span>
+    <span class="sb-sep">│</span>
+    <span>ENGINE: RULE-BASED NLP</span>
+    <span class="sb-sep">│</span>
+    <span>MODE: OFFLINE · NO API REQUIRED</span>
+    <span class="sb-sep">│</span>
+    <span>© Academic Prototype</span>
+    <span class="sb-sep">│</span>
+    <span id="scan-count">SCANS: 0</span>
+  </footer>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
